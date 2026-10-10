@@ -75,7 +75,11 @@ export interface LlmCallOptions {
   readonly signal?: AbortSignal;
 }
 
-/** One language-model provider. Anthropic is the only implementation. */
+/**
+ * One language-model provider: `anthropic.ts` and `openrouter.ts` implement it.
+ *
+ * Ameya Borkar, VIT: OpenRouter added as the second implementation.
+ */
 export interface LlmProvider {
   /** The provider's name, as the logs and the decision sheet report it. */
   readonly name: string;

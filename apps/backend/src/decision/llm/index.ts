@@ -65,6 +65,9 @@ import type { DecisionAnswer } from "./schema.ts";
 
 export { createAnthropicProvider, ANTHROPIC_PROVIDER } from "./anthropic.ts";
 export type { AnthropicProviderOptions } from "./anthropic.ts";
+// Ameya Borkar, VIT: the OpenRouter provider, chosen with LLM_PROVIDER=openrouter.
+export { createOpenRouterProvider, OPENROUTER_PROVIDER } from "./openrouter.ts";
+export type { OpenRouterProviderOptions } from "./openrouter.ts";
 export { DecisionSchema, SEVERITY_LEVELS, RATIONALE_MAX_CHARS } from "./schema.ts";
 export type { DecisionAnswer } from "./schema.ts";
 export type {

@@ -20,7 +20,7 @@
  * under the wrong label.
  */
 
-import { ConfigError } from "../config/env.ts";
+import { ConfigError, LLM_PROVIDERS } from "../config/env.ts";
 import type { Env } from "../config/env.ts";
 import type { DecisionBackend } from "./types.ts";
 
@@ -68,10 +68,11 @@ export function selectBackend(env: Env, factories: DecisionBackendFactories): De
       if (env.llmApiKey === null) {
         throw new ConfigError(["DECISION_BACKEND is llm but LLM_API_KEY is not set"]);
       }
-      if (env.llmProvider !== "anthropic") {
+      // Ameya Borkar, VIT: the same provider list `loadEnv` checks (anthropic, openrouter).
+      if (!LLM_PROVIDERS.includes(env.llmProvider)) {
         throw new ConfigError([
-          `DECISION_BACKEND is llm but LLM_PROVIDER is ${env.llmProvider}; only anthropic ` +
-            "is implemented",
+          `DECISION_BACKEND is llm but LLM_PROVIDER is ${env.llmProvider}; only ` +
+            `${LLM_PROVIDERS.join(" and ")} are implemented`,
         ]);
       }
       if (factories.llm === undefined) throw missingFactory("llm");

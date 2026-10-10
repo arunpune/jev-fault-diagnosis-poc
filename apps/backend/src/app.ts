@@ -49,7 +49,13 @@ import { createCostRepo } from "./cost/repo.ts";
 import { createAppPool } from "./db/app.ts";
 import { assertMigrated, REQUIRED_MIGRATION, type Pool } from "./db/pool.ts";
 import { createJevBackend } from "./decision/jev/index.ts";
-import { createAnthropicProvider, createLlmBackend } from "./decision/llm/index.ts";
+import {
+  createAnthropicProvider,
+  createLlmBackend,
+  createOpenRouterProvider,
+  OPENROUTER_PROVIDER,
+} from "./decision/llm/index.ts";
+import type { LlmProvider } from "./decision/llm/provider.ts";
 import { selectBackend, type DecisionBackendFactories } from "./decision/select.ts";
 import type { DecisionBackend } from "./decision/types.ts";
 import { resolveRoles } from "./detection/index.ts";
@@ -227,6 +233,23 @@ function requireKey(key: Secret | null, variable: string): Secret {
   return key;
 }
 
+/**
+ * The provider `LLM_PROVIDER` names; `selectBackend` has already refused any other.
+ *
+ * Ameya Borkar, VIT: added so `LLM_PROVIDER=openrouter` builds the OpenRouter provider; every
+ * other accepted value keeps the Anthropic one, as before.
+ */
+function llmProvider(env: Env): LlmProvider {
+  const options = {
+    apiKey: requireKey(env.llmApiKey, "LLM_API_KEY"),
+    model: env.llmModel,
+    ...(env.llmBaseUrl === null ? {} : { baseURL: env.llmBaseUrl }),
+  };
+  return env.llmProvider === OPENROUTER_PROVIDER
+    ? createOpenRouterProvider(options)
+    : createAnthropicProvider(options);
+}
+
 /** The three answer engines, built from the environment. */
 function defaultBackendFactories(clock: WallClock, logger: Logger): DecisionBackendFactories {
   const now = (): number => clock.now().getTime();
@@ -244,16 +267,7 @@ function defaultBackendFactories(clock: WallClock, logger: Logger): DecisionBack
           decisionLogger.warn(fields, message);
         },
       }),
-    llm: (env) =>
-      createLlmBackend(
-        createAnthropicProvider({
-          apiKey: requireKey(env.llmApiKey, "LLM_API_KEY"),
-          model: env.llmModel,
-          ...(env.llmBaseUrl === null ? {} : { baseURL: env.llmBaseUrl }),
-        }),
-        clock,
-        { labels: SIGNAL_LABELS },
-      ),
+    llm: (env) => createLlmBackend(llmProvider(env), clock, { labels: SIGNAL_LABELS }),
   };
 }
 

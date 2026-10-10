@@ -183,12 +183,15 @@ A failed decision never reaches the gate and changes no ticket. It still counts 
 
 `config/env.ts` resolves `DECISION_BACKEND` and refuses a backend whose key is missing; `decision/select.ts` builds the backend from factories that the composition root (`apps/backend/src/app.ts`) injects, so tests and `tools/eval` can swap any of them.
 
+<!-- Ameya Borkar, VIT: added the openrouter row to this table. -->
+
 | `DECISION_BACKEND` | Keys                                             | Result                                                                    |
 | ------------------ | ------------------------------------------------ | ------------------------------------------------------------------------- |
 | Unset              | `TYPESAFE_API_KEY` set                           | Jev                                                                       |
 | Unset              | `TYPESAFE_API_KEY` not set                       | Rules                                                                     |
 | `jev`              | `TYPESAFE_API_KEY` not set                       | Start-up fails: "DECISION_BACKEND is jev but TYPESAFE_API_KEY is not set" |
 | `llm`              | `LLM_API_KEY` set, `LLM_PROVIDER=anthropic`      | LLM                                                                       |
+| `llm`              | `LLM_API_KEY` set, `LLM_PROVIDER=openrouter`     | LLM, through OpenRouter                                                   |
 | `llm`              | `LLM_API_KEY` not set, or another `LLM_PROVIDER` | Start-up fails, naming the variable                                       |
 | `rules`            | Any                                              | Rules                                                                     |
 
@@ -436,9 +439,11 @@ Changing the questions also invalidates recorded evaluation cassettes, because t
 
 `apps/backend/src/decision/llm/` asks Anthropic Claude the same three questions over the same state, in one structured-output call per decision. It exists for comparison: the model reports its own probabilities, so its confidence is a self-report, and an evaluation report that shows it must say so.
 
+<!-- Ameya Borkar, VIT: "Selected when" now names openrouter too. -->
+
 | Setting       | Value                                                                                                      |
 | ------------- | ---------------------------------------------------------------------------------------------------------- |
-| Selected when | `DECISION_BACKEND=llm`, with `LLM_API_KEY` set and `LLM_PROVIDER=anthropic`, the only provider implemented |
+| Selected when | `DECISION_BACKEND=llm`, with `LLM_API_KEY` set and `LLM_PROVIDER=anthropic` or `openrouter` (next section) |
 | SDK           | `@anthropic-ai/sdk` 0.127.0, behind the `LlmProvider` port of `decision/llm/provider.ts`                   |
 | Model         | `LLM_MODEL`, default `claude-opus-5`                                                                       |
 | Endpoint      | The SDK's default, or `LLM_BASE_URL`                                                                       |
@@ -484,6 +489,14 @@ Code then does the arithmetic (`decision/llm/index.ts`):
 The rationale is stored with the raw response in `app.decisions.response`. `decision/message.ts` does not copy it into the decision message, so the optional `rationale` field of the `decision` and `ticket` contracts, which the decision sheet would show, stays empty in the running stack.
 
 **`LLM_BASE_URL`** overrides the Anthropic endpoint, for the backend and for init. The tests point it at `startMockAnthropic` from `@fdp/contracts/mock` (`pnpm --filter @fdp/contracts run mock-anthropic` runs it on its own), which plays the happy path, a refusal, a `max_tokens` stop and HTTP 401, 429 and 529, so the provider is exercised over a socket before any live call. `compose.yaml` does not pass `LLM_BASE_URL` into the containers, so the Compose stack always uses the SDK's default endpoint.
+
+### Through OpenRouter
+
+<!-- Ameya Borkar, VIT: this section documents the OpenRouter provider added in decision/llm/openrouter.ts. -->
+
+`LLM_PROVIDER=openrouter` sends the same request to OpenRouter's OpenAI-compatible Chat Completions API (`decision/llm/openrouter.ts`, a plain `fetch` with no SDK), so any model OpenRouter serves can answer, free `:free` models included. `LLM_API_KEY` is then the OpenRouter key and `LLM_MODEL` an OpenRouter model id such as `vendor/model:free`; set it explicitly, since the default is not an OpenRouter id. The request carries the same JSON Schema as `response_format: { type: "json_schema", json_schema: { strict: true, … } }`, with `provider.require_parameters: true` so OpenRouter only routes to an upstream that honours it: pick a model whose OpenRouter page lists _structured outputs_. A reply wrapped in a Markdown fence is unwrapped, `finish_reason: "length"` reads as `max_tokens`, the output budget is 8192 tokens to leave reasoning models room, 429, 502 and 503 are retried twice, 402 (out of credits) maps to `auth`, and an error object inside a 200 body is mapped by its code. `LLM_BASE_URL` overrides the endpoint (default `https://openrouter.ai/api/v1`) but, as above, Compose does not pass it on. Set `LLM_PRICE_*` to the model's prices, `0` for a free one.
+
+Free models are rate-limited per key (about 20 requests a minute, and a small daily allowance unless the account holds credits), and every decision is one request: at the default 600× replay the stack makes a few decisions a minute while detection fires, so pause the replay or jump straight to a preset when the allowance matters. A request over the limit fails as `rate_limit` and the decision is logged as failed; nothing falls back to another backend. Init's catalog pass is unchanged: with `LLM_PROVIDER=openrouter` init reads the catalog from the tables.
 
 ### Second use: structuring the catalog in init
 
