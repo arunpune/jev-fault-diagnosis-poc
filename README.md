@@ -536,6 +536,10 @@ The guides below go deeper than this page.
 | [Security model](docs/security.md) | What the stack exposes, what leaves it and how credentials are handled |
 | [Development](docs/development.md) | Toolchain, workspace layout, tests, the three gate levels and the conventions |
 
+<!-- Arnav Gupta, VIT Group 6: added the link to README_DETAILED.md below. -->
+
+Everything on one page: [README_DETAILED.md](README_DETAILED.md) gathers the machine and every sensor, the dataset, the simulator, the detection rules, the decision models, the platforms, the evaluation, every setting and every command.
+
 Project: [CONTRIBUTING.md](CONTRIBUTING.md), [CHANGELOG.md](CHANGELOG.md), [SECURITY.md](SECURITY.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ---

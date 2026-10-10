@@ -25,6 +25,7 @@ tools/manual-build/.build/
 # Hand-formatted Markdown: Prettier would realign the tables.
 CHANGELOG.md
 README.md
+README_DETAILED.md
 # The evaluation records are committed as written: the held-out seal test reads
 # the seal's hash lines, the harness parses the choice record's NAME=value lines,
 # and the final-run record is a fixed account of one run.
