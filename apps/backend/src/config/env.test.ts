@@ -85,6 +85,7 @@ describe("loadEnv", () => {
   });
 
   it("refuses a provider the llm backend cannot reach", () => {
+    // Ameya Borkar, VIT: the message now names both implemented providers.
     expect(() =>
       loadEnv({
         ...COMPOSE,
@@ -92,7 +93,21 @@ describe("loadEnv", () => {
         LLM_API_KEY: "lk-test",
         LLM_PROVIDER: "somewhere-else",
       }),
-    ).toThrow(/only anthropic is implemented/);
+    ).toThrow(/only anthropic and openrouter are implemented/);
+  });
+
+  // Ameya Borkar, VIT: openrouter is accepted as the llm backend's provider.
+  it("accepts openrouter as the llm provider", () => {
+    const env = loadEnv({
+      ...COMPOSE,
+      DECISION_BACKEND: "llm",
+      LLM_API_KEY: "lk-test",
+      LLM_PROVIDER: "openrouter",
+      LLM_MODEL: "vendor/model:free",
+    });
+    expect(env.decisionBackend).toBe("llm");
+    expect(env.llmProvider).toBe("openrouter");
+    expect(env.llmModel).toBe("vendor/model:free");
   });
 
   it("refuses a Jev model alias and accepts a pinned version", () => {

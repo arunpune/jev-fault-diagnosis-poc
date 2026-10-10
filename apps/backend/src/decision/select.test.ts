@@ -96,7 +96,10 @@ describe("selectBackend: what stops a run at startup", () => {
       ...envOf({ DECISION_BACKEND: "llm", LLM_API_KEY: "k" }),
       llmProvider: "some-other-provider",
     };
-    expect(() => selectBackend(env, ALL_FACTORIES)).toThrow(/only anthropic is implemented/);
+    // Ameya Borkar, VIT: the message now names both implemented providers.
+    expect(() => selectBackend(env, ALL_FACTORIES)).toThrow(
+      /only anthropic and openrouter are implemented/,
+    );
   });
 
   it("always has the rules twin, whatever else is missing", () => {

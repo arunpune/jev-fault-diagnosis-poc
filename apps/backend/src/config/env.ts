@@ -133,6 +133,13 @@ const secret = optional.transform((value) => (value === undefined ? null : new S
 
 const DECISION_BACKENDS = ["jev", "llm", "rules"] as const;
 
+/**
+ * The `LLM_PROVIDER` values the llm backend has an implementation for.
+ *
+ * Ameya Borkar, VIT: added `openrouter` beside `anthropic`.
+ */
+export const LLM_PROVIDERS: readonly string[] = ["anthropic", "openrouter"];
+
 const LOG_LEVELS = ["fatal", "error", "warn", "info", "debug", "trace", "silent"] as const;
 
 const SCHEMA = z.object({
@@ -328,9 +335,11 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   if (decisionBackend === "llm" && llmApiKey === null) {
     throw new ConfigError(["DECISION_BACKEND is llm but LLM_API_KEY is not set"]);
   }
-  if (decisionBackend === "llm" && raw.LLM_PROVIDER !== "anthropic") {
+  // Ameya Borkar, VIT: accept every provider in LLM_PROVIDERS, not only anthropic.
+  if (decisionBackend === "llm" && !LLM_PROVIDERS.includes(raw.LLM_PROVIDER)) {
     throw new ConfigError([
-      `DECISION_BACKEND is llm but LLM_PROVIDER is ${raw.LLM_PROVIDER}; only anthropic is implemented`,
+      `DECISION_BACKEND is llm but LLM_PROVIDER is ${raw.LLM_PROVIDER}; only ` +
+        `${LLM_PROVIDERS.join(" and ")} are implemented`,
     ]);
   }
   if (raw.GATE_REVIEW_MIN_CONFIDENCE > raw.GATE_TICKET_MIN_CONFIDENCE) {
